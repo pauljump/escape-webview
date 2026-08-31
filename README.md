@@ -85,6 +85,15 @@ Detection is allowlist-based on the User-Agent string, so normal Safari / Chrome
 users are never shown the overlay by mistake. Add more in `APPS` in
 [`src/escape-webview.js`](src/escape-webview.js).
 
+## Content Security Policy
+
+The card is styled with a constructable stylesheet inside a Shadow DOM, so it
+renders under a strict `style-src 'self'` (no `'unsafe-inline'` needed). If you
+self-host `escape-webview.js`, `script-src 'self'` is enough — no CDN entry
+required. Engines without constructable stylesheets (iOS Safari < 16.4) fall back
+to an injected `<style>`, which a strict `style-src` will block; the buttons still
+work, only the styling is lost there.
+
 ---
 
 ## Develop

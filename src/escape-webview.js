@@ -106,8 +106,8 @@
 
     var host = D.createElement('div');
     host.id = 'escape-webview-root';
-    host.style.cssText = 'position:fixed;inset:0;z-index:2147483647';
-    var root = host.attachShadow ? host.attachShadow({ mode: 'open' }) : host;
+    var shadow = host.attachShadow ? host.attachShadow({ mode: 'open' }) : null;
+    var root = shadow || host;
 
     var appName = app ? app.name : 'this app';
     var hintKey = app ? app.key : 'menu';
@@ -115,7 +115,7 @@
                          : isAndroid ? (cfg.app && cfg.app.android) : null;
 
     var css = [
-      ':host{all:initial}',
+      ':host{all:initial;position:fixed;inset:0;z-index:2147483647}',
       '*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}',
       '.wrap{position:fixed;inset:0;display:flex;align-items:flex-end;justify-content:center;',
       '  background:rgba(0,0,0,.55);backdrop-filter:blur(2px)}',
@@ -173,13 +173,28 @@
     h.push('<button class="dismiss" id="eh-x">Keep viewing here</button>');
     h.push('</div></div>');
 
-    if (root === host) {
-      var style = D.createElement('style'); style.textContent = css;
-      D.head.appendChild(style);
+    // Style via a constructable stylesheet: not subject to style-src CSP, so the
+    // card renders even on sites with a strict `style-src 'self'` policy.
+    var styled = false;
+    if (shadow) {
+      try {
+        var sheet = new CSSStyleSheet();
+        sheet.replaceSync(css);
+        shadow.adoptedStyleSheets = [sheet];
+        styled = true;
+      } catch (e) {}
     }
-    var mk = root === host ? '' : '<style>' + css + '</style>';
-    (root.innerHTML !== undefined) ? (root.innerHTML = mk + h.join(''))
-                                   : (host.innerHTML = h.join(''));
+    var markup = h.join('');
+    if (!styled) {
+      // Fallback for engines without constructable sheets; needs a permissive
+      // (or absent) style-src to take effect.
+      markup = '<style>' + css + '</style>' + markup;
+      if (!shadow) {
+        host.style.position = 'fixed'; host.style.top = 0; host.style.left = 0;
+        host.style.right = 0; host.style.bottom = 0; host.style.zIndex = 2147483647;
+      }
+    }
+    root.innerHTML = markup;
     (D.body || D.documentElement).appendChild(host);
 
     var $ = function (id) { return (root.getElementById || D.getElementById).call(root, id); };
