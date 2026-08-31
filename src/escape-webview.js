@@ -143,7 +143,8 @@
     var h = [];
     h.push('<div class="wrap"><div class="card" role="dialog" aria-modal="true">');
     h.push('<h1>Open in your browser</h1>');
-    h.push('<p>You’re viewing this inside ' + esc(appName) +
+    h.push('<p>You’re viewing ' + (cfg.name ? esc(cfg.name) : 'this page') +
+           ' inside ' + esc(appName) +
            '. Some things (sign-in, extensions, saved passwords) only work in your real browser.</p>');
 
     if (deepLink) {
