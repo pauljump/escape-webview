@@ -24,7 +24,7 @@
   var APPS = [
     { re: /Twitter/i,                     key: 'x',        name: 'X' },
     { re: /Instagram/i,                   key: 'instagram', name: 'Instagram' },
-    { re: /Messenger(?:ForiOS|Lite)?[\/;]|\bMessenger\b/i,
+    { re: /Messenger(?:ForiOS|Lite)|\bMessenger\b/i,
                                           key: 'facebook', name: 'Messenger' },
     { re: /FBAN|FBAV|FB_IAB|FBIOS|FB4A/i, key: 'facebook', name: 'Facebook' },
     { re: /musical_ly|Bytedance|TikTok/i, key: 'tiktok',   name: 'TikTok' },
@@ -42,12 +42,15 @@
     { re: /Discord/i,                     key: 'menu',     name: 'Discord' }
   ];
 
+  // Steps for the host app's own "open externally" menu item. This is the only
+  // route out of an iOS webview that reliably works, so it is shown as the
+  // primary instruction. Pipe-separated; each segment renders as one <li>.
   var IOS_HINTS = {
-    x:        'Tap the share icon at the bottom of the screen, then “Open in Safari”.',
-    instagram:'Tap ••• at the top-right, then “Open in external browser”.',
-    facebook: 'Tap ••• at the top-right, then “Open in external browser”.',
-    tiktok:   'Tap ••• at the top-right, then “Open in browser”.',
-    menu:     'Open this page in your browser from the app’s menu (usually ••• or the share icon).'
+    x:        'Tap the share icon <b>↑</b> in the bottom bar|Choose <b>Open in Safari</b>',
+    instagram:'Tap <b>•••</b> at the top right|Choose <b>Open in external browser</b>',
+    facebook: 'Tap <b>•••</b> at the top right|Choose <b>Open in external browser</b>',
+    tiktok:   'Tap <b>•••</b> at the top right|Choose <b>Open in browser</b>',
+    menu:     'Open the app’s menu (usually <b>•••</b> or the share icon)|Choose <b>Open in browser</b>'
   };
   var ANDROID_HINT =
     'Tap ⋮ at the top-right, then “Open in browser” or “Open in Chrome”.';
@@ -152,6 +155,14 @@
       '.chips .btn{margin:0}',
       '.hint{margin-top:16px;padding:11px 13px;border-radius:11px;font-size:12.5px;line-height:1.4;',
       '  background:rgba(128,128,128,.12)}',
+      '.hint[hidden]{display:none}',
+      // The step list is the thing that actually works on iOS, so it gets the
+      // visual weight a primary action would normally get.
+      'ol.steps{margin:0 0 18px;padding:14px 16px 14px 34px;border-radius:12px;',
+      '  background:rgba(128,128,128,.12);font-size:14px;line-height:1.5}',
+      'ol.steps li{margin:2px 0}',
+      'ol.steps b{font-weight:680}',
+      'p.or{margin:14px 0 0;font-size:12px;text-align:center;opacity:.5}',
       '.dismiss{margin-top:14px;font-size:12px;opacity:.5;background:none;border:0;color:inherit;',
       '  width:100%;cursor:pointer}',
       '.ok{opacity:1;color:#128a4b;font-weight:600}'
@@ -170,23 +181,39 @@
 
     if (isAndroid) {
       h.push('<button class="btn primary" id="eh-go">Open in browser</button>');
+      h.push('<button class="btn ghost" id="eh-copy">Copy link</button>');
+      h.push('<div class="hint">' + esc(ANDROID_HINT) + '</div>');
+
     } else if (isIOS) {
-      // No reliable programmatic route to the default browser on iOS webviews.
-      h.push('<a class="btn primary" id="eh-open" href="' + esc(cfg.url) +
-             '" target="_blank" rel="noopener">Try to open</a>');
+      // iOS gives a webview no way to hand a URL to Safari. target="_blank" just
+      // re-opens in the same in-app webview, and x-safari-https:// is blocked in
+      // current iOS. The only thing that always works is the host app's own
+      // "Open in Safari" menu item -- so that is the headline, not a footnote.
+      // The scheme buttons stay as quick wins, but they fail *silently* when the
+      // browser isn't installed, so each one self-reports (see wireEscape).
+      // NOT escaped, deliberately: IOS_HINTS values are trusted literals defined
+      // above and carry intentional <b> markup. No caller input reaches them.
+      h.push('<ol class="steps">' + (IOS_HINTS[hintKey] || IOS_HINTS.menu)
+        .split('|').map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ol>');
+      h.push('<button class="btn primary" id="eh-copy">Copy link</button>');
+      h.push('<p class="or">or, if you have them installed</p>');
       h.push('<div class="chips">');
-      h.push('<a class="btn ghost" href="' + esc(chromeUrl(cfg.url)) + '">Chrome</a>');
-      h.push('<a class="btn ghost" href="' + esc(firefoxUrl(cfg.url)) + '">Firefox</a>');
+      h.push('<a class="btn ghost" id="eh-chrome" href="' + esc(chromeUrl(cfg.url)) + '">Chrome</a>');
+      h.push('<a class="btn ghost" id="eh-firefox" href="' + esc(firefoxUrl(cfg.url)) + '">Firefox</a>');
       h.push('</div>');
+      h.push('<div class="hint" id="eh-note" hidden></div>');
+
     } else {
       h.push('<a class="btn primary" href="' + esc(cfg.url) +
              '" target="_blank" rel="noopener">Open in browser</a>');
+      h.push('<button class="btn ghost" id="eh-copy">Copy link</button>');
+      // Same trusted literal, flattened to one sentence. "Choose X" reads wrong
+      // after "then", so drop the verb on the trailing segments.
+      h.push('<div class="hint">' + IOS_HINTS.menu.split('|')
+        .map(function (s, i) { return i ? s.replace(/^Choose /, '') : s; })
+        .join(', then ') + '.</div>');
     }
 
-    h.push('<button class="btn ghost" id="eh-copy">Copy link</button>');
-
-    var hint = isAndroid ? ANDROID_HINT : (IOS_HINTS[hintKey] || IOS_HINTS.menu);
-    h.push('<div class="hint" id="eh-hint">' + esc(hint) + '</div>');
     h.push('<button class="dismiss" id="eh-x">Keep viewing here</button>');
     h.push('</div></div>');
 
@@ -223,10 +250,39 @@
     var copyBtn = $('eh-copy');
     if (copyBtn) copyBtn.addEventListener('click', function () {
       copy(cfg.url, function (ok) {
-        copyBtn.textContent = ok ? 'Link copied ✓' : 'Copy failed — long-press the link';
+        copyBtn.textContent = ok ? 'Link copied ✓ — now paste it in your browser'
+                                 : 'Copy failed — long-press the link instead';
         if (ok) copyBtn.classList.add('ok');
       });
     });
+
+    // Tapping a custom scheme for an app that isn't installed does nothing at
+    // all on iOS -- no error, no navigation, no way to feature-detect first.
+    // That reads as "the button is broken". So: watch for the page going
+    // hidden (which is what a successful hand-off looks like) and if it hasn't
+    // happened shortly after the tap, say so instead of leaving them guessing.
+    function wireEscape(id, label) {
+      var el = $(id), note = $('eh-note');
+      if (!el || !note) return;
+      el.addEventListener('click', function () {
+        var left = false;
+        var onLeave = function () { left = true; };
+        D.addEventListener('visibilitychange', onLeave);
+        W.addEventListener('pagehide', onLeave);
+        W.addEventListener('blur', onLeave);
+        setTimeout(function () {
+          D.removeEventListener('visibilitychange', onLeave);
+          W.removeEventListener('pagehide', onLeave);
+          W.removeEventListener('blur', onLeave);
+          if (left || D.hidden) return;          // hand-off worked; nothing to say
+          note.hidden = false;
+          note.textContent = label + ' didn’t open — it’s probably not installed. ' +
+            'Use the steps above, or copy the link.';
+        }, 1500);
+      });
+    }
+    wireEscape('eh-chrome', 'Chrome');
+    wireEscape('eh-firefox', 'Firefox');
 
     var x = $('eh-x');
     if (x) x.addEventListener('click', function () {
