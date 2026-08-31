@@ -101,6 +101,22 @@
   function chromeUrl(u) {
     return u.replace(/^https:/i, 'googlechromes:').replace(/^http:/i, 'googlechrome:');
   }
+
+  // Ask the OS to handle a custom scheme from a subframe. Webviews that block
+  // top-level scheme navigation sometimes still honour this; the iframe is torn
+  // down either way so nothing is left behind.
+  function iframeHit(href) {
+    try {
+      var f = D.createElement('iframe');
+      f.setAttribute('aria-hidden', 'true');
+      f.style.display = 'none';
+      f.style.width = f.style.height = '0';
+      f.style.border = '0';
+      (D.body || D.documentElement).appendChild(f);
+      try { f.contentWindow.location.href = href; } catch (e) { f.src = href; }
+      setTimeout(function () { f.parentNode && f.parentNode.removeChild(f); }, 2000);
+    } catch (e) {}
+  }
   function firefoxUrl(u) {
     return 'firefox://open-url?url=' + encodeURIComponent(u);
   }
@@ -261,7 +277,7 @@
     // That reads as "the button is broken". So: watch for the page going
     // hidden (which is what a successful hand-off looks like) and if it hasn't
     // happened shortly after the tap, say so instead of leaving them guessing.
-    function wireEscape(id, label) {
+    function wireEscape(id, label, scheme) {
       var el = $(id), note = $('eh-note');
       if (!el || !note) return;
       el.addEventListener('click', function () {
@@ -270,19 +286,28 @@
         D.addEventListener('visibilitychange', onLeave);
         W.addEventListener('pagehide', onLeave);
         W.addEventListener('blur', onLeave);
+
+        // The anchor's own href is the top-level attempt. Some in-app browsers
+        // refuse top-level custom-scheme navigation but still let a subframe
+        // reach the OS handler, so race a hidden iframe against it. Whichever
+        // the host app permits wins; if it forbids both, nothing happens and
+        // the timeout below explains why.
+        setTimeout(function () { if (!left && !D.hidden) iframeHit(scheme); }, 120);
+
         setTimeout(function () {
           D.removeEventListener('visibilitychange', onLeave);
           W.removeEventListener('pagehide', onLeave);
           W.removeEventListener('blur', onLeave);
           if (left || D.hidden) return;          // hand-off worked; nothing to say
           note.hidden = false;
-          note.textContent = label + ' didn’t open — it’s probably not installed. ' +
-            'Use the steps above, or copy the link.';
-        }, 1500);
+          note.textContent = label + ' didn’t open. ' + esc(appName) +
+            ' blocks apps from launching other apps, so use the steps above ' +
+            '— or copy the link and paste it in ' + label + '.';
+        }, 1800);
       });
     }
-    wireEscape('eh-chrome', 'Chrome');
-    wireEscape('eh-firefox', 'Firefox');
+    wireEscape('eh-chrome', 'Chrome', chromeUrl(cfg.url));
+    wireEscape('eh-firefox', 'Firefox', firefoxUrl(cfg.url));
 
     var x = $('eh-x');
     if (x) x.addEventListener('click', function () {
