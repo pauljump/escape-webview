@@ -42,18 +42,48 @@
     { re: /Discord/i,                     key: 'menu',     name: 'Discord' }
   ];
 
-  // Steps for the host app's own "open externally" menu item. This is the only
-  // route out of an iOS webview that reliably works, so it is shown as the
-  // primary instruction. Pipe-separated; each segment renders as one <li>.
-  var IOS_HINTS = {
-    x:        'Tap the share icon <b>↑</b> in the bottom bar|Choose <b>Open in Safari</b>',
-    instagram:'Tap <b>•••</b> at the top right|Choose <b>Open in external browser</b>',
-    facebook: 'Tap <b>•••</b> at the top right|Choose <b>Open in external browser</b>',
-    tiktok:   'Tap <b>•••</b> at the top right|Choose <b>Open in browser</b>',
-    menu:     'Open the app’s menu (usually <b>•••</b> or the share icon)|Choose <b>Open in browser</b>'
+  /* Each app's own "leave this browser" affordance, described precisely enough
+     to draw a replica of it. Verified against X for iPhone 12.21 on iOS 26.6:
+     the control is the kebab next to the address in the BOTTOM bar, and the
+     item is "Open in browser" -- not the share icon, and not "Open in Safari".
+     Other apps are from their documented UI; correct them as you verify. */
+  var GUIDE = {
+    x: {
+      trigger: '\u22ee', where: 'next to the address, at the bottom of this screen',
+      pointer: 'down',
+      menu: [['share', 'Share'], ['globe', 'Open in browser'], ['copy', 'Copy link']]
+    },
+    instagram: {
+      trigger: '\u2022\u2022\u2022', where: 'top right',
+      pointer: 'up',
+      menu: [['copy', 'Copy link'], ['globe', 'Open in external browser']]
+    },
+    facebook: {
+      trigger: '\u2022\u2022\u2022', where: 'top right',
+      pointer: 'up',
+      menu: [['copy', 'Copy link'], ['globe', 'Open in external browser']]
+    },
+    tiktok: {
+      trigger: '\u2022\u2022\u2022', where: 'top right',
+      pointer: 'up',
+      menu: [['share', 'Share'], ['globe', 'Open in browser']]
+    },
+    menu: {
+      trigger: '\u2022\u2022\u2022', where: 'in the app\u2019s menu',
+      pointer: null,
+      menu: [['globe', 'Open in browser']]
+    }
   };
+
+  // Inline so the card never makes a network request for chrome it needs now.
+  var ICONS = {
+    share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4 7 9M12 4l5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>',
+    globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/></svg>',
+    copy:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>'
+  };
+
   var ANDROID_HINT =
-    'Tap ⋮ at the top-right, then “Open in browser” or “Open in Chrome”.';
+    'Tap \u22ee at the top-right, then \u201cOpen in browser\u201d or \u201cOpen in Chrome\u201d.';
 
   function detect() {
     for (var i = 0; i < APPS.length; i++) {
@@ -179,6 +209,37 @@
       'ol.steps li{margin:2px 0}',
       'ol.steps b{font-weight:680}',
       'p.or{margin:14px 0 0;font-size:12px;text-align:center;opacity:.5}',
+
+      // A replica of the host app's own menu. Recognition beats description:
+      // the user matches this against the real sheet instead of parsing prose.
+      '.menu{margin:4px 0 16px;border-radius:14px;overflow:hidden;',
+      '  background:rgba(128,128,128,.14)}',
+      '.mi{display:flex;align-items:center;justify-content:space-between;gap:12px;',
+      '  padding:13px 15px;font-size:15px}',
+      '.mi+.mi{border-top:1px solid rgba(128,128,128,.2)}',
+      '.mi i{flex:0 0 auto;width:19px;height:19px;opacity:.75}',
+      '.mi i svg{width:100%;height:100%;display:block}',
+      '.mi.pick{background:#0b0b0c;color:#fff;font-weight:650;',
+      '  box-shadow:inset 0 0 0 2px #0b0b0c}',
+      '@media(prefers-color-scheme:dark){.mi.pick{background:#f4f4f5;color:#0b0b0c}}',
+      '.mi.pick i{opacity:1}',
+
+      'p.lead{margin:0 0 4px;font-size:14px;line-height:1.5;opacity:1}',
+      'p.lead b{font-weight:680}',
+      '.kebab{display:inline-block;padding:0 7px;margin:0 1px;border-radius:6px;',
+      '  background:rgba(128,128,128,.22);font-weight:700}',
+
+      // Aims at the real control. In X the kebab sits in the bottom bar, so the
+      // arrow points down and out of the card toward it.
+      '.point{font-size:20px;line-height:1;text-align:center;opacity:.4;',
+      '  margin:6px 0 20px}',
+      '.point.up{transform:rotate(180deg)}',
+      '@media(prefers-reduced-motion:no-preference){',
+      '  .point.down{animation:ehb 1.4s ease-in-out infinite}',
+      '  .point.up{animation:ehbu 1.4s ease-in-out infinite}}',
+      '@keyframes ehb{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}',
+      '@keyframes ehbu{0%,100%{transform:rotate(180deg) translateY(0)}',
+      '  50%{transform:rotate(180deg) translateY(5px)}}',
       '.dismiss{margin-top:14px;font-size:12px;opacity:.5;background:none;border:0;color:inherit;',
       '  width:100%;cursor:pointer}',
       '.ok{opacity:1;color:#128a4b;font-weight:600}'
@@ -201,40 +262,36 @@
       h.push('<div class="hint">' + esc(ANDROID_HINT) + '</div>');
 
     } else if (isIOS) {
-      // iOS gives a webview no way to hand a URL to Safari. target="_blank" just
-      // re-opens in the same in-app webview, and x-safari-https:// is blocked in
-      // current iOS. The only thing that always works is the host app's own
-      // "Open in Safari" menu item -- so that is the headline, not a footnote.
-      // The scheme buttons stay as quick wins, but they fail *silently* when the
-      // browser isn't installed, so each one self-reports (see wireEscape).
-      //
-      // Measured in X for iPhone 12.21 / iOS 26.6: every custom scheme is
-      // blocked (googlechromes, x-safari-https, firefox, x-web-search,
-      // x-callback, shortcuts, and the same via hidden iframe -- 11 of 11).
-      // window.open is the only call that hands the URL off, so it leads.
-      h.push('<button class="btn primary" id="eh-open">Open in browser</button>');
+      // Measured in X for iPhone 12.21 / iOS 26.6: all 11 custom-scheme routes
+      // are blocked (chrome, safari, firefox, x-callback, shortcuts, and the
+      // same again via hidden iframe), and window.open only yields another tab
+      // inside the same webview. There is no programmatic escape, so stop
+      // offering buttons that cannot work and teach the one gesture that does.
+      var g = GUIDE[hintKey] || GUIDE.menu;
 
-      // NOT escaped, deliberately: IOS_HINTS values are trusted literals defined
-      // above and carry intentional <b> markup. No caller input reaches them.
-      h.push('<p class="or">if that doesn’t leave the app</p>');
-      h.push('<ol class="steps">' + (IOS_HINTS[hintKey] || IOS_HINTS.menu)
-        .split('|').map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ol>');
-      h.push('<button class="btn ghost" id="eh-copy">Copy link</button>');
-      h.push('<div class="chips">');
-      h.push('<a class="btn ghost" id="eh-chrome" href="' + esc(chromeUrl(cfg.url)) + '">Chrome</a>');
-      h.push('<a class="btn ghost" id="eh-firefox" href="' + esc(firefoxUrl(cfg.url)) + '">Firefox</a>');
+      h.push('<div class="menu" aria-hidden="true">');
+      for (var i = 0; i < g.menu.length; i++) {
+        var pick = g.menu[i][0] === 'globe';
+        h.push('<div class="mi' + (pick ? ' pick' : '') + '">' +
+               '<span>' + esc(g.menu[i][1]) + '</span>' +
+               '<i>' + ICONS[g.menu[i][0]] + '</i></div>');
+      }
       h.push('</div>');
+
+      h.push('<p class="lead">Tap <b class="kebab">' + esc(g.trigger) + '</b> ' +
+             esc(g.where) + ', then <b>' + esc(pickLabel(g)) + '</b>.</p>');
+
+      if (g.pointer) h.push('<div class="point ' + g.pointer + '">\u2193</div>');
+
+      h.push('<button class="btn ghost" id="eh-copy">Copy link instead</button>');
       h.push('<div class="hint" id="eh-note" hidden></div>');
 
     } else {
       h.push('<a class="btn primary" href="' + esc(cfg.url) +
              '" target="_blank" rel="noopener">Open in browser</a>');
       h.push('<button class="btn ghost" id="eh-copy">Copy link</button>');
-      // Same trusted literal, flattened to one sentence. "Choose X" reads wrong
-      // after "then", so drop the verb on the trailing segments.
-      h.push('<div class="hint">' + IOS_HINTS.menu.split('|')
-        .map(function (s, i) { return i ? s.replace(/^Choose /, '') : s; })
-        .join(', then ') + '.</div>');
+      h.push('<div class="hint">Or use the app\u2019s own menu: ' +
+             esc(GUIDE.menu.trigger) + ' \u2192 ' + esc(pickLabel(GUIDE.menu)) + '.</div>');
     }
 
     h.push('<button class="dismiss" id="eh-x">Keep viewing here</button>');
@@ -340,6 +397,13 @@
     if (x) x.addEventListener('click', function () {
       host.parentNode && host.parentNode.removeChild(host);
     });
+  }
+
+  function pickLabel(g) {
+    for (var i = 0; i < g.menu.length; i++) {
+      if (g.menu[i][0] === 'globe') return g.menu[i][1];
+    }
+    return 'Open in browser';
   }
 
   function esc(s) {
