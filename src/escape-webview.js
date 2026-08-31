@@ -1,16 +1,16 @@
 /*!
- * escape-hatch v0.1.0
+ * escape-webview v0.1.0
  * Break out of in-app browsers (X, Instagram, Facebook, TikTok, LINE, ...) into
  * the user's real browser -- or, when the OS forbids that, show a one-tap card
  * with a working alternative.
  *
- * MIT License. https://github.com/OWNER/escape-hatch
+ * MIT License. https://github.com/pauljump/escape-webview
  *
  * Usage (snippet mode, on your own page):
- *   <script src="https://unpkg.com/escape-hatch" data-auto></script>
+ *   <script src="https://unpkg.com/escape-webview" data-auto></script>
  *
  * Usage (programmatic):
- *   EscapeHatch.init({ url: 'https://example.com/post', name: 'Example',
+ *   EscapeWebview.init({ url: 'https://example.com/post', name: 'Example',
  *                      app: { ios: 'https://...', android: 'https://...' } });
  */
 (function () {
@@ -102,10 +102,10 @@
 
   /* ---- overlay UI ------------------------------------------------------- */
   function render(cfg, app) {
-    if (D.getElementById('escape-hatch-root')) return;
+    if (D.getElementById('escape-webview-root')) return;
 
     var host = D.createElement('div');
-    host.id = 'escape-hatch-root';
+    host.id = 'escape-webview-root';
     host.style.cssText = 'position:fixed;inset:0;z-index:2147483647';
     var root = host.attachShadow ? host.attachShadow({ mode: 'open' }) : host;
 
@@ -214,7 +214,7 @@
     init: function (opts) {
       opts = opts || {};
       var url = safeHttp(opts.url || location.href);
-      if (!url) { if (W.console) console.warn('[escape-hatch] no valid http(s) url'); return; }
+      if (!url) { if (W.console) console.warn('[escape-webview] no valid http(s) url'); return; }
       var cfg = { url: url, name: opts.name || null, app: opts.app || null };
       var app = detect();
 
@@ -230,7 +230,7 @@
     }
   };
 
-  W.EscapeHatch = API;
+  W.EscapeWebview = API;
 
   /* ---- auto-init from the <script> tag -------------------------------- */
   var cs = D.currentScript;
@@ -246,5 +246,5 @@
       });
     }
   }
-  if (W.EscapeHatchConfig) API.init(W.EscapeHatchConfig);
+  if (W.EscapeWebviewConfig) API.init(W.EscapeWebviewConfig);
 })();

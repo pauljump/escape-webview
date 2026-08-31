@@ -1,11 +1,11 @@
 {
-  "name": "escape-hatch",
+  "name": "escape-webview",
   "version": "0.1.0",
   "description": "Break out of in-app browsers (X, Instagram, Facebook, TikTok, ...) into the user's real browser -- or show a one-tap fallback when the OS forbids it.",
-  "main": "src/escape-hatch.js",
-  "module": "src/escape-hatch.js",
-  "unpkg": "src/escape-hatch.js",
-  "jsdelivr": "src/escape-hatch.js",
+  "main": "src/escape-webview.js",
+  "module": "src/escape-webview.js",
+  "unpkg": "src/escape-webview.js",
+  "jsdelivr": "src/escape-webview.js",
   "files": [
     "src",
     "interstitial",
@@ -32,7 +32,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/OWNER/escape-hatch.git"
+    "url": "https://github.com/pauljump/escape-webview.git"
   },
-  "homepage": "https://github.com/OWNER/escape-hatch#readme"
+  "homepage": "https://github.com/pauljump/escape-webview#readme"
 }

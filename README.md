@@ -1,8 +1,8 @@
-# escape-hatch
+# escape-webview
 
 Links opened inside the **X, Instagram, Facebook, TikTok, LINE, …** apps run in a
 stripped-down in-app browser (a webview). Sign-in, browser extensions, saved
-passwords and payment autofill often break there. `escape-hatch` detects that
+passwords and payment autofill often break there. `escape-webview` detects that
 situation and gets the user into their **real browser** — automatically where the
 OS allows it, and with a clean one-tap card where it doesn't.
 
@@ -32,7 +32,7 @@ Optional query params: `&name=Your%20Site`, `&app_ios=…`, `&app_android=…`.
 ### 2. One line on your own page
 
 ```html
-<script src="https://unpkg.com/escape-hatch" data-auto></script>
+<script src="https://unpkg.com/escape-webview" data-auto></script>
 ```
 
 It runs on page load, does nothing in a normal browser, and shows the card when
@@ -49,10 +49,10 @@ it detects an in-app browser. Optional attributes:
 ### Programmatic
 
 ```js
-import 'escape-hatch'; // or a <script> tag without data-auto
+import 'escape-webview'; // or a <script> tag without data-auto
 
-if (EscapeHatch.isInApp()) {
-  EscapeHatch.init({
+if (EscapeWebview.isInApp()) {
+  EscapeWebview.init({
     url: 'https://yoursite.com/post',
     name: 'Your Site',
     app: { ios: 'https://yoursite.com/post', android: 'https://yoursite.com/post' }
@@ -83,7 +83,7 @@ Snapchat, LINE, WeChat, KakaoTalk, the Google app, Slack, Discord.
 
 Detection is allowlist-based on the User-Agent string, so normal Safari / Chrome
 users are never shown the overlay by mistake. Add more in `APPS` in
-[`src/escape-hatch.js`](src/escape-hatch.js).
+[`src/escape-webview.js`](src/escape-webview.js).
 
 ---
 
