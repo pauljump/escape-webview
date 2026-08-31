@@ -207,12 +207,19 @@
       // "Open in Safari" menu item -- so that is the headline, not a footnote.
       // The scheme buttons stay as quick wins, but they fail *silently* when the
       // browser isn't installed, so each one self-reports (see wireEscape).
+      //
+      // Measured in X for iPhone 12.21 / iOS 26.6: every custom scheme is
+      // blocked (googlechromes, x-safari-https, firefox, x-web-search,
+      // x-callback, shortcuts, and the same via hidden iframe -- 11 of 11).
+      // window.open is the only call that hands the URL off, so it leads.
+      h.push('<button class="btn primary" id="eh-open">Open in browser</button>');
+
       // NOT escaped, deliberately: IOS_HINTS values are trusted literals defined
       // above and carry intentional <b> markup. No caller input reaches them.
+      h.push('<p class="or">if that doesn’t leave the app</p>');
       h.push('<ol class="steps">' + (IOS_HINTS[hintKey] || IOS_HINTS.menu)
         .split('|').map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ol>');
-      h.push('<button class="btn primary" id="eh-copy">Copy link</button>');
-      h.push('<p class="or">or, if you have them installed</p>');
+      h.push('<button class="btn ghost" id="eh-copy">Copy link</button>');
       h.push('<div class="chips">');
       h.push('<a class="btn ghost" id="eh-chrome" href="' + esc(chromeUrl(cfg.url)) + '">Chrome</a>');
       h.push('<a class="btn ghost" id="eh-firefox" href="' + esc(firefoxUrl(cfg.url)) + '">Firefox</a>');
@@ -308,6 +315,26 @@
     }
     wireEscape('eh-chrome', 'Chrome', chromeUrl(cfg.url));
     wireEscape('eh-firefox', 'Firefox', firefoxUrl(cfg.url));
+
+    // The only route out of X's webview that the OS actually honours. A
+    // returned Window means the host app kept it in-context (a tab inside the
+    // same in-app browser), which is not an escape -- so say so rather than
+    // claim success.
+    var openBtn = $('eh-open');
+    if (openBtn) openBtn.addEventListener('click', function () {
+      var note = $('eh-note'), w = null, inContext = false;
+      try { w = W.open(cfg.url, '_blank'); } catch (e) {}
+      if (w) { inContext = true; try { w.focus(); } catch (e) {} }
+      setTimeout(function () {
+        if (D.hidden) return;                    // left the app; nothing to say
+        if (!note) return;
+        note.hidden = false;
+        note.textContent = inContext
+          ? 'That opened a new tab inside ' + appName +
+            ', not your browser. Use the steps above.'
+          : appName + ' blocked that. Use the steps above, or copy the link.';
+      }, 1800);
+    });
 
     var x = $('eh-x');
     if (x) x.addEventListener('click', function () {
