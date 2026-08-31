@@ -14,8 +14,25 @@ OS allows it, and with a clean one-tap card where it doesn't.
 
 ### 1. Wrap your links (nothing to add to your site)
 
-Deploy the [`interstitial/`](interstitial/) folder to any static host
-(Cloudflare Pages, GitHub Pages, Netlify, Vercel). Then share links shaped like:
+Put both files at the root of any static host (Cloudflare Pages, GitHub Pages,
+Netlify, Vercel) — they must sit next to each other:
+
+```
+your-deploy/
+  index.html          <- copy of interstitial/index.html
+  escape-webview.js   <- copy of src/escape-webview.js
+```
+
+**Then edit `ALLOW_HOSTS` in `index.html`.** It ships empty and an empty list
+forwards nothing — that's deliberate. A `?u=` endpoint that accepts any URL is an
+open redirect, and phishing crawlers find those fast. List each hostname you
+actually link to (subdomains are not implied):
+
+```js
+var ALLOW_HOSTS = ['yoursite.com', 'www.yoursite.com'];
+```
+
+Now share links shaped like:
 
 ```
 https://go.yoursite.com/?u=https://yoursite.com/the-real-page
@@ -26,13 +43,13 @@ In a normal browser it redirects straight through — the user sees nothing.
 
 Optional query params: `&name=Your%20Site`, `&app_ios=…`, `&app_android=…`.
 
-> **Open-redirect note:** a public `?u=` endpoint will forward to *any* https URL.
-> Edit `ALLOW_HOSTS` in `interstitial/index.html` to whitelist your own domains.
-
 ### 2. One line on your own page
 
+Self-host `src/escape-webview.js` (one file, no build step). Self-hosting also
+keeps you inside a strict `script-src 'self'` CSP:
+
 ```html
-<script src="https://unpkg.com/escape-webview" data-auto></script>
+<script src="/escape-webview.js" data-auto></script>
 ```
 
 It runs on page load, does nothing in a normal browser, and shows the card when
@@ -46,10 +63,13 @@ it detects an in-app browser. Optional attributes:
 | `data-force` | Also show in desktop browsers (for development) |
 | `data-url="https://…"` | Escape to a different URL than the current page |
 
+> Not on npm yet — `npm i escape-webview` will 404 until it's published. Copy the
+> single file from [`src/`](src/) for now.
+
 ### Programmatic
 
 ```js
-import 'escape-webview'; // or a <script> tag without data-auto
+// Load src/escape-webview.js first (a <script> tag without data-auto).
 
 if (EscapeWebview.isInApp()) {
   EscapeWebview.init({
@@ -78,8 +98,14 @@ That's an Apple platform limitation, not something any library can work around.
 
 ## Detected apps
 
-X (Twitter), Instagram, Facebook, Messenger, TikTok, LinkedIn, Pinterest,
-Snapchat, LINE, WeChat, KakaoTalk, the Google app, Slack, Discord.
+X (Twitter), Instagram, Threads, Facebook, Messenger, TikTok, Reddit, WhatsApp,
+LinkedIn, Pinterest, Snapchat, LINE, WeChat, KakaoTalk, the Google app, Slack,
+Discord.
+
+> **X on Android** opens links in Chrome Custom Tabs, which report a plain Chrome
+> User-Agent and are undetectable. That's fine — Custom Tabs *are* the real
+> browser, with your cookies and passwords. The problem this library solves is
+> the iOS in-app webview.
 
 Detection is allowlist-based on the User-Agent string, so normal Safari / Chrome
 users are never shown the overlay by mistake. Add more in `APPS` in
@@ -91,8 +117,9 @@ The card is styled with a constructable stylesheet inside a Shadow DOM, so it
 renders under a strict `style-src 'self'` (no `'unsafe-inline'` needed). If you
 self-host `escape-webview.js`, `script-src 'self'` is enough — no CDN entry
 required. Engines without constructable stylesheets (iOS Safari < 16.4) fall back
-to an injected `<style>`, which a strict `style-src` will block; the buttons still
-work, only the styling is lost there.
+to an injected `<style>`, which a strict `style-src` will block. On that path the
+host element is positioned inline instead, so the card is still a full-screen
+overlay with working buttons — it just loses the card styling.
 
 ---
 

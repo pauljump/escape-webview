@@ -7,7 +7,7 @@
  * MIT License. https://github.com/pauljump/escape-webview
  *
  * Usage (snippet mode, on your own page):
- *   <script src="https://unpkg.com/escape-webview" data-auto></script>
+ *   <script src="/escape-webview.js" data-auto></script>
  *
  * Usage (programmatic):
  *   EscapeWebview.init({ url: 'https://example.com/post', name: 'Example',
@@ -24,9 +24,13 @@
   var APPS = [
     { re: /Twitter/i,                     key: 'x',        name: 'X' },
     { re: /Instagram/i,                   key: 'instagram', name: 'Instagram' },
+    { re: /Messenger(?:ForiOS|Lite)?[\/;]|\bMessenger\b/i,
+                                          key: 'facebook', name: 'Messenger' },
     { re: /FBAN|FBAV|FB_IAB|FBIOS|FB4A/i, key: 'facebook', name: 'Facebook' },
-    { re: /\bMessenger\b/i,               key: 'facebook', name: 'Messenger' },
     { re: /musical_ly|Bytedance|TikTok/i, key: 'tiktok',   name: 'TikTok' },
+    { re: /Barcelona/i,                   key: 'instagram', name: 'Threads' },
+    { re: /Reddit\//i,                    key: 'menu',     name: 'Reddit' },
+    { re: /WhatsApp/i,                    key: 'menu',     name: 'WhatsApp' },
     { re: /LinkedInApp/i,                 key: 'menu',     name: 'LinkedIn' },
     { re: /Pinterest/i,                   key: 'menu',     name: 'Pinterest' },
     { re: /Snapchat/i,                    key: 'menu',     name: 'Snapchat' },
@@ -66,6 +70,19 @@
       if (p.protocol === 'http:' || p.protocol === 'https:') return p.href;
     } catch (e) {}
     return null;
+  }
+
+  // Deep links legitimately use custom schemes (myapp://) or https universal
+  // links, so safeHttp() is too strict here. Deny the script-bearing schemes
+  // instead: esc() stops attribute breakout but would happily emit
+  // href="javascript:...", which fires on tap.
+  var BAD_SCHEME = /^(?:javascript|data|vbscript|file|blob):/i;
+  function safeDeepLink(u) {
+    if (!u || typeof u !== 'string') return null;
+    // Browsers ignore control characters and whitespace when resolving a URL,
+    // so "java\tscript:alert(1)" still executes. Normalise before testing.
+    var clean = u.replace(/[\u0000-\u0020]/g, '');
+    return BAD_SCHEME.test(clean) ? null : u;
   }
 
   // Android: an intent:// URL asks the OS to hand the link to a real browser
@@ -111,8 +128,8 @@
 
     var appName = app ? app.name : 'this app';
     var hintKey = app ? app.key : 'menu';
-    var deepLink = isIOS ? (cfg.app && cfg.app.ios)
-                         : isAndroid ? (cfg.app && cfg.app.android) : null;
+    var deepLink = safeDeepLink(isIOS ? (cfg.app && cfg.app.ios)
+                                      : isAndroid ? (cfg.app && cfg.app.android) : null);
 
     var css = [
       ':host{all:initial;position:fixed;inset:0;z-index:2147483647}',
@@ -186,18 +203,19 @@
     }
     var markup = h.join('');
     if (!styled) {
-      // Fallback for engines without constructable sheets; needs a permissive
-      // (or absent) style-src to take effect.
+      // Fallback for engines without constructable sheets (iOS Safari < 16.4).
+      // The injected <style> is subject to style-src, so a strict CSP will drop
+      // it -- position the host inline regardless, so the card is still a modal
+      // rather than unstyled text at the foot of the page.
       markup = '<style>' + css + '</style>' + markup;
-      if (!shadow) {
-        host.style.position = 'fixed'; host.style.top = 0; host.style.left = 0;
-        host.style.right = 0; host.style.bottom = 0; host.style.zIndex = 2147483647;
-      }
+      host.style.position = 'fixed'; host.style.top = 0; host.style.left = 0;
+      host.style.right = 0; host.style.bottom = 0; host.style.zIndex = 2147483647;
     }
     root.innerHTML = markup;
     (D.body || D.documentElement).appendChild(host);
 
-    var $ = function (id) { return (root.getElementById || D.getElementById).call(root, id); };
+    // querySelector works on both a ShadowRoot and a plain Element host.
+    var $ = function (id) { return root.querySelector('#' + id); };
 
     var go = $('eh-go');
     if (go) go.addEventListener('click', function () { location.href = toIntent(cfg.url); });

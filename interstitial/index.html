@@ -34,31 +34,45 @@
    *     &app_android=https://...    deep link / universal link (Android)
    * -------------------------------------------------------------------- */
 
-  // OPEN-REDIRECT GUARD: list the hostnames you actually link to.
-  // Leave [] to allow any https target (fine for personal use; risky if public).
-  var ALLOW_HOSTS = [];
+  // OPEN-REDIRECT GUARD -- REQUIRED. List every hostname you link to; subdomains
+  // are NOT implied, list them individually. An empty list forwards nothing,
+  // because a wide-open ?u= endpoint is an open redirect that phishing will find.
+  var ALLOW_HOSTS = [
+    // 'example.com',
+    // 'www.example.com',
+  ];
 
   var q = new URLSearchParams(location.search);
   var target = q.get('u') || q.get('url') || '';
 
   function valid(u) {
+    if (!ALLOW_HOSTS.length) return false;
     try {
       var p = new URL(u);
       if (p.protocol !== 'http:' && p.protocol !== 'https:') return false;
-      if (ALLOW_HOSTS.length && ALLOW_HOSTS.indexOf(p.hostname) === -1) return false;
-      return true;
+      return ALLOW_HOSTS.indexOf(p.hostname) !== -1;
     } catch (e) { return false; }
   }
 
+  // Deep links may use custom schemes, so they can't go through `valid()`.
+  // Reject only the script-bearing schemes.
+  function safeDeepLink(u) {
+    if (!u) return null;
+    return /^(?:javascript|data|vbscript|file|blob):/i
+      .test(u.replace(/[\u0000-\u0020]/g, '')) ? null : u;
+  }
+
   if (!valid(target)) {
-    document.getElementById('msg').textContent =
-      'This link is missing a valid ?u= destination.';
+    document.getElementById('msg').textContent = ALLOW_HOSTS.length
+      ? 'This link has no valid ?u= destination.'
+      : 'Not configured: add your hostnames to ALLOW_HOSTS in index.html.';
     document.getElementById('raw').style.display = 'none';
   } else {
     document.getElementById('raw').href = target;
     // Load the widget from the same deploy.
     var s = document.createElement('script');
-    s.src = '../src/escape-webview.js';   // adjust if you host the widget elsewhere
+    // Copy src/escape-webview.js next to this file when you deploy.
+    s.src = 'escape-webview.js';
     s.setAttribute('data-manual', '');
     s.onload = function () {
       if (window.EscapeWebview && window.EscapeWebview.isInApp()) {
@@ -66,7 +80,8 @@
           url: target,
           name: q.get('name'),
           app: (q.get('app_ios') || q.get('app_android'))
-            ? { ios: q.get('app_ios'), android: q.get('app_android') } : null
+            ? { ios: safeDeepLink(q.get('app_ios')),
+                android: safeDeepLink(q.get('app_android')) } : null
         });
       } else {
         location.replace(target);       // normal browser: just go
