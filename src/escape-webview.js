@@ -16,6 +16,8 @@
 (function () {
   'use strict';
 
+  var VERSION = '1.0.0';
+
   var W = window, D = document, UA = navigator.userAgent || '';
 
   /* ---- in-app browser fingerprints ---------------------------------------- */
@@ -155,18 +157,122 @@
   }
 
   function copy(text, done) {
+    var settled = false;
+    function finish(ok) { if (!settled) { settled = true; done(ok); } }
+
+    function legacy() {
+      try {
+        var ta = D.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');   // stops iOS zooming to a keyboard
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        D.body.appendChild(ta);
+        ta.select();
+        try { ta.setSelectionRange(0, text.length); } catch (e) {}  // iOS needs this
+        var ok = D.execCommand('copy');
+        D.body.removeChild(ta);
+        finish(!!ok);
+      } catch (e) { finish(false); }
+    }
+
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function () { done(true); },
-                                              function () { done(false); });
+      // A denied clipboard permission can leave this promise pending forever,
+      // which would strand the button with no feedback and emit no event.
+      // Fall back rather than hang.
+      setTimeout(function () { if (!settled) legacy(); }, 1200);
+      try {
+        navigator.clipboard.writeText(text).then(
+          function () { finish(true); },
+          function () { if (!settled) legacy(); });
+      } catch (e) { legacy(); }
       return;
     }
+    legacy();
+  }
+
+  /* ---- analytics --------------------------------------------------------- */
+  /* Two separate consumers, deliberately kept apart:
+       1. The site owner's own analytics. Auto-detected on the page, so a
+          zero-config install still reports. First-party, their data.
+       2. Optional anonymous telemetry to the project. OFF unless the installer
+          asks for it. A tool whose whole premise is "in-app browsers are bad
+          for you" has no business silently tracking anyone. */
+
+  var TELEMETRY_URL = 'https://pulse.polyfeeds.dev/api/escape-webview';
+  var listeners = [];
+
+  // Do Not Track / Global Privacy Control. Applies to the project's telemetry
+  // only -- the owner's first-party analytics is their call, not ours.
+  function optedOut() {
     try {
-      var ta = D.createElement('textarea');
-      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-      D.body.appendChild(ta); ta.select();
-      var ok = D.execCommand('copy');
-      D.body.removeChild(ta); done(ok);
-    } catch (e) { done(false); }
+      if (navigator.globalPrivacyControl) return true;
+      var d = navigator.doNotTrack || W.doNotTrack || navigator.msDoNotTrack;
+      return d === '1' || d === 'yes';
+    } catch (e) { return false; }
+  }
+
+  function sinks(name, d) {
+    var label = 'escape_webview_' + name;
+    // Each guarded separately: one broken analytics library must not stop the
+    // others, and must never break the card.
+    try { if (typeof W.gtag === 'function') W.gtag('event', label, d); } catch (e) {}
+    try { if (typeof W.plausible === 'function') W.plausible(label, { props: d }); } catch (e) {}
+    try { if (W.posthog && W.posthog.capture) W.posthog.capture(label, d); } catch (e) {}
+    try {
+      if (W.umami) (typeof W.umami.track === 'function' ? W.umami.track : W.umami)(label, d);
+    } catch (e) {}
+    try { if (W.fathom && W.fathom.trackEvent) W.fathom.trackEvent(label); } catch (e) {}
+    try {
+      if (W.dataLayer && W.dataLayer.push) {
+        var g = {};
+        for (var k in d) if (Object.prototype.hasOwnProperty.call(d, k)) g[k] = d[k];
+        // After the copy, not before: d carries its own `event` key and would
+        // otherwise overwrite the GTM event name with the bare event type.
+        g.event = label;
+        W.dataLayer.push(g);
+      }
+    } catch (e) {}
+  }
+
+  function beacon(url, d) {
+    try {
+      var body = JSON.stringify(d);
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' }));
+      } else {
+        fetch(url, {
+          method: 'POST', headers: { 'Content-Type': 'text/plain' },
+          keepalive: true, body: body
+        })['catch'](function () {});
+      }
+    } catch (e) {}
+  }
+
+  function emit(cfg, name, extra) {
+    var d = {
+      event: name,
+      app: cfg._app || 'unknown',
+      os: isIOS ? 'ios' : isAndroid ? 'android' : 'other'
+    };
+    if (extra) for (var k in extra) {
+      if (Object.prototype.hasOwnProperty.call(extra, k)) d[k] = extra[k];
+    }
+
+    for (var i = 0; i < listeners.length; i++) {
+      try { listeners[i](name, d); } catch (e) {}
+    }
+    if (cfg.analytics !== false) sinks(name, d);
+
+    if (cfg.telemetry && !optedOut()) {
+      // Deliberately no URL, no path, no referrer, no visitor id, no cookie.
+      // Hostname is what makes an install countable; nothing here identifies
+      // a person or what they were reading.
+      beacon(typeof cfg.telemetry === 'string' ? cfg.telemetry : TELEMETRY_URL, {
+        event: d.event, app: d.app, os: d.os,
+        domain: location.hostname,
+        v: VERSION
+      });
+    }
   }
 
   /* ---- overlay UI ------------------------------------------------------- */
@@ -179,6 +285,7 @@
     var root = shadow || host;
 
     var appName = app ? app.name : 'this app';
+    cfg._app = appName;
     var hintKey = app ? app.key : 'menu';
     var deepLink = safeDeepLink(isIOS ? (cfg.app && cfg.app.ios)
                                       : isAndroid ? (cfg.app && cfg.app.android) : null);
@@ -358,19 +465,30 @@
     }
     root.innerHTML = markup;
     (D.body || D.documentElement).appendChild(host);
+    emit(cfg, 'shown');
 
     // querySelector works on both a ShadowRoot and a plain Element host.
     var $ = function (id) { return root.querySelector('#' + id); };
 
     var go = $('eh-go');
-    if (go) go.addEventListener('click', function () { location.href = toIntent(cfg.url); });
+    if (go) go.addEventListener('click', function () {
+      emit(cfg, 'escape_click');
+      location.href = toIntent(cfg.url);
+    });
 
     var copyBtn = $('eh-copy');
     if (copyBtn) copyBtn.addEventListener('click', function () {
       copy(cfg.url, function (ok) {
-        copyBtn.textContent = ok ? 'Link copied ✓ — now paste it in your browser'
-                                 : 'Copy failed — long-press the link instead';
-        if (ok) copyBtn.classList.add('ok');
+        emit(cfg, ok ? 'copy' : 'copy_failed');
+        // Terse and self-reverting: this is the secondary action. An earlier
+        // build expanded to a three-line banner that dominated the card and
+        // pulled attention off the gesture that actually works.
+        copyBtn.textContent = ok ? 'Copied ✓' : 'Copy failed';
+        copyBtn.classList.add(ok ? 'done' : 'quiet');
+        if (ok) setTimeout(function () {
+          copyBtn.textContent = 'Copy link';
+          copyBtn.classList.remove('done');
+        }, 2400);
       });
     });
 
@@ -383,6 +501,7 @@
       var el = $(id), note = $('eh-note');
       if (!el || !note) return;
       el.addEventListener('click', function () {
+        emit(cfg, 'escape_click', { via: label.toLowerCase() });
         var left = false;
         var onLeave = function () { left = true; };
         D.addEventListener('visibilitychange', onLeave);
@@ -400,7 +519,8 @@
           D.removeEventListener('visibilitychange', onLeave);
           W.removeEventListener('pagehide', onLeave);
           W.removeEventListener('blur', onLeave);
-          if (left || D.hidden) return;          // hand-off worked; nothing to say
+          if (left || D.hidden) { emit(cfg, 'escaped', { via: label.toLowerCase() }); return; }
+          emit(cfg, 'escape_blocked', { via: label.toLowerCase() });
           note.hidden = false;
           note.textContent = label + ' didn’t open. ' + esc(appName) +
             ' blocks apps from launching other apps, so use the steps above ' +
@@ -433,6 +553,7 @@
 
     var x = $('eh-x');
     if (x) x.addEventListener('click', function () {
+      emit(cfg, 'dismiss');
       host.parentNode && host.parentNode.removeChild(host);
     });
   }
@@ -452,14 +573,30 @@
 
   /* ---- public API ------------------------------------------------------ */
   var API = {
+    version: VERSION,
     isInApp: function () { return !!detect(); },
     app: detect,
+
+    // Subscribe to card events: on(function (name, data) { ... }).
+    // Returns an unsubscribe function.
+    on: function (fn) {
+      if (typeof fn !== 'function') return function () {};
+      listeners.push(fn);
+      return function () {
+        var i = listeners.indexOf(fn);
+        if (i >= 0) listeners.splice(i, 1);
+      };
+    },
 
     init: function (opts) {
       opts = opts || {};
       var url = safeHttp(opts.url || location.href);
       if (!url) { if (W.console) console.warn('[escape-webview] no valid http(s) url'); return; }
-      var cfg = { url: url, name: opts.name || null, app: opts.app || null };
+      var cfg = {
+        url: url, name: opts.name || null, app: opts.app || null,
+        analytics: opts.analytics !== false,
+        telemetry: opts.telemetry || false
+      };
       var app = detect();
 
       if (!app && !opts.force) return;               // normal browser: do nothing
@@ -486,7 +623,11 @@
         name: d.name,
         force: d.force === '' || d.force === 'true',
         auto: d.auto !== 'false',
-        app: (d.appIos || d.appAndroid) ? { ios: d.appIos, android: d.appAndroid } : null
+        app: (d.appIos || d.appAndroid) ? { ios: d.appIos, android: d.appAndroid } : null,
+        analytics: d.analytics !== 'off',
+        // data-telemetry           -> project endpoint
+        // data-telemetry="https://..." -> your own collector
+        telemetry: ('telemetry' in d) ? (d.telemetry || true) : false
       });
     }
   }

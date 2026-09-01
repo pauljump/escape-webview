@@ -6,7 +6,12 @@ passwords and payment autofill often break there. `escape-webview` detects that
 situation and gets the user into their **real browser** — automatically where the
 OS allows it, and with a clean one-tap card where it doesn't.
 
-~4 KB, no dependencies, no build step, no tracking. MIT.
+One file, no dependencies, no build step. 10 KB gzipped. MIT.
+
+**Point your coding agent at this repo and it installs itself** — [`AGENTS.md`](AGENTS.md)
+is written for Claude Code, Codex, Cursor or similar:
+
+> Install https://github.com/pauljump/escape-webview into this site. Follow AGENTS.md.
 
 ---
 
@@ -120,6 +125,48 @@ required. Engines without constructable stylesheets (iOS Safari < 16.4) fall bac
 to an injected `<style>`, which a strict `style-src` will block. On that path the
 host element is positioned inline instead, so the card is still a full-screen
 overlay with working buttons — it just loses the card styling.
+
+---
+
+## Analytics
+
+**Your own: zero config.** If `gtag`, `plausible`, `posthog`, `umami`, `fathom`
+or `dataLayer` is already on the page, the widget emits to it automatically.
+Events are prefixed `escape_webview_`:
+
+| Event | Meaning |
+|---|---|
+| `shown` | Card displayed |
+| `copy` / `copy_failed` | Copy link tapped |
+| `escape_click` | An escape button tapped |
+| `escaped` | The app actually handed off |
+| `escape_blocked` | The app refused |
+| `dismiss` | "Not now" |
+
+Turn it off with `data-analytics="off"`. For anything custom:
+
+```js
+EscapeWebview.on(function (event, data) {   // data = { event, app, os }
+  myAnalytics.track(event, data);
+});
+```
+
+**Project telemetry: opt-in, off by default.**
+
+```html
+<script src="/escape-webview.js" defer data-auto data-telemetry></script>
+```
+
+That sends `{ event, app, os, domain, v }` to the maintainers — no URL, no path,
+no referrer, no visitor ID, no cookie, no fingerprint — and honours Do Not Track
+and Global Privacy Control. It exists so the project can count installs and see
+which apps block which techniques.
+
+It is **off unless you add that attribute**, and it should stay off unless you
+mean it: enabling it transmits your visitors' data to a third party and can make
+you a data controller under GDPR/CCPA. A tool whose entire premise is *"in-app
+browsers take things from you"* has no business quietly taking something back.
+Point it at your own collector instead with `data-telemetry="https://you/…"`.
 
 ---
 
