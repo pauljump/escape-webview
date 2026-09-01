@@ -8,6 +8,10 @@ OS allows it, and with a clean one-tap card where it doesn't.
 
 One file, no dependencies, no build step. 10 KB gzipped. MIT.
 
+**[Try it: pauljump.github.io/escape-webview](https://pauljump.github.io/escape-webview/)**
+— the project runs the widget on its own homepage. Open that link from inside X
+and the card appears. Open it in Safari and nothing happens, which is the point.
+
 **Point your coding agent at this repo and it installs itself** — [`AGENTS.md`](AGENTS.md)
 is written for Claude Code, Codex, Cursor or similar:
 
