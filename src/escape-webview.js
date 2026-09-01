@@ -216,7 +216,7 @@
       /* Coach mark: an echo of the control to tap, then a large arrow aimed at
          where the real one sits. The whole pill is the target -- it is a far
          bigger hit area than the kebab inside it. */
-      '.aim{margin:20px 0 16px}',
+      '.aim{margin:14px 0 0}',
 
       '.bar{position:relative;display:flex;align-items:center;gap:10px;',
       '  padding:12px 12px 12px 18px;border-radius:999px;font-size:14px;',
@@ -236,7 +236,7 @@
 
       /* The arrow is the last thing in the card, aimed out of it at the real
          control sitting just below. Sized to be unmissable. */
-      '.aimdown{margin:16px 0 -4px}',
+      '.aimdown{margin:10px 0 -6px}',
       '.chev{margin:0 auto;width:28px;height:44px;opacity:.9}',
       '.chev.up{margin:0 auto 10px;transform:rotate(180deg)}',
       '.chev svg{width:100%;height:100%;display:block}',
@@ -247,10 +247,10 @@
       '@keyframes ehbu{0%,100%{transform:rotate(180deg) translateY(0)}',
       '  50%{transform:rotate(180deg) translateY(7px)}}',
 
-      'p.cta{margin:0;font-size:15px;line-height:1.5}',
+      'p.cta{margin:0 0 2px;font-size:15px;line-height:1.5}',
       'p.cta b{font-weight:680}',
 
-      '.foot{display:flex;gap:8px;margin-top:20px}',
+      '.foot{display:flex;gap:8px;margin:18px 0 22px}',
       '.tbtn{flex:1;padding:12px 10px;border:0;border-radius:11px;cursor:pointer;',
       '  font-size:14px;font-weight:600;color:inherit;',
       '  background:rgba(128,128,128,.16);-webkit-tap-highlight-color:transparent}',
@@ -294,30 +294,31 @@
         'stroke="currentColor" stroke-width="2.4" stroke-linecap="round" ' +
         'stroke-linejoin="round"><path d="M12 3v33"/><path d="M4 28l8 8 8-8"/>' +
         '</svg></div>';
+      var pill = g.bar
+        ? '<div class="bar"><span class="host">' + esc(shownHost) + '</span>' +
+          '<span class="kb"><i></i><i></i><i></i></span></div>'
+        : '<div class="bar dots-only"><span class="kb wide">' +
+          '<i></i><i></i><i></i></span></div>';
+      var cta = '<p class="cta">Tap <b>' + esc(g.tap) + '</b> ' + esc(g.where) +
+                ', then choose <b>' + esc(pickLabel(g)) + '</b>.</p>';
 
-      h.push('<div class="aim" aria-hidden="true">');
-      // Target sits above the card in these apps, so the arrow leads into it.
-      if (g.pointer === 'up') h.push('<div class="chev up">' + arrow + '</div>');
-      if (g.bar) {
-        h.push('<div class="bar"><span class="host">' + esc(shownHost) + '</span>' +
-               '<span class="kb"><i></i><i></i><i></i></span></div>');
-      } else {
-        h.push('<div class="bar dots-only"><span class="kb wide">' +
-               '<i></i><i></i><i></i></span></div>');
-      }
-      h.push('</div>');
-
-      h.push('<p class="cta">Tap <b>' + esc(g.tap) + '</b> ' + esc(g.where) +
-             ', then choose <b>' + esc(pickLabel(g)) + '</b>.</p>');
-
+      // Secondary actions sit up top, out of the way. The instruction then runs
+      // uninterrupted into the target: sentence, replica of the control, arrow,
+      // and immediately below the card, the real thing.
       h.push('<div class="foot">');
       h.push('<button class="tbtn" id="eh-copy">Copy link</button>');
       h.push('<button class="tbtn quiet" id="eh-x">Not now</button>');
       h.push('</div>');
 
-      // Last element in the card: it points out of the card at the real
-      // control directly below, so it belongs nearest that edge.
-      if (g.pointer === 'down') h.push('<div class="aimdown" aria-hidden="true">' + arrow + '</div>');
+      if (g.pointer === 'up') {
+        h.push('<div class="aim" aria-hidden="true"><div class="chev up">' +
+               arrow + '</div>' + pill + '</div>');
+        h.push(cta);
+      } else {
+        h.push(cta);
+        h.push('<div class="aim" aria-hidden="true">' + pill + '</div>');
+        if (g.pointer) h.push('<div class="aimdown" aria-hidden="true">' + arrow + '</div>');
+      }
 
       h.push('<div class="hint" id="eh-note" hidden></div>');
 
