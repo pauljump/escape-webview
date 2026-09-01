@@ -15,7 +15,7 @@ stripped-down in-app browser. Sign-in, saved passwords, extensions and payment
 autofill are unavailable there. This widget detects that and gets the user into
 their real browser.
 
-**One file, no dependencies, no build step.** ~5 KB.
+**One file, no dependencies, no build step.** 10 KB gzipped.
 
 ---
 

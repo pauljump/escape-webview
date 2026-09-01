@@ -112,6 +112,12 @@ Discord.
 > browser, with your cookies and passwords. The problem this library solves is
 > the iOS in-app webview.
 
+> **Only X's instructions are device-verified** (X for iPhone 12.21, iOS 26.6).
+> The wording for Instagram, Facebook and TikTok comes from their documented
+> UI — and documentation was wrong about X, so treat it as a starting point.
+> If you catch one being wrong, the fix is one line in the `GUIDE` table in
+> [`src/escape-webview.js`](src/escape-webview.js). PRs very welcome.
+
 Detection is allowlist-based on the User-Agent string, so normal Safari / Chrome
 users are never shown the overlay by mistake. Add more in `APPS` in
 [`src/escape-webview.js`](src/escape-webview.js).

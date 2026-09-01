@@ -1,5 +1,5 @@
 /*!
- * escape-webview v0.1.0
+ * escape-webview v1.0.0
  * Break out of in-app browsers (X, Instagram, Facebook, TikTok, LINE, ...) into
  * the user's real browser -- or, when the OS forbids that, show a one-tap card
  * with a working alternative.
@@ -329,7 +329,10 @@
       '  padding:12px 12px 12px 18px;border-radius:999px;font-size:14px;',
       '  letter-spacing:-.01em;background:rgba(128,128,128,.18);',
       '  box-shadow:0 0 0 2px currentColor}',
-      '.bar.dots-only{justify-content:center;padding:12px}',
+      /* Apps whose target is a small ••• button, not an address bar. A
+         full-width pill misrepresented the size of the real control. */
+      '.bar.dots-only{width:52px;height:38px;margin:0 auto;padding:0;',
+      '  justify-content:center;border-radius:12px}',
       '@media(prefers-reduced-motion:no-preference){',
       '  .bar{animation:ehglow 2s ease-in-out infinite}}',
       '@keyframes ehglow{0%,100%{box-shadow:0 0 0 2px currentColor}',
@@ -345,7 +348,7 @@
          control sitting just below. Sized to be unmissable. */
       '.aimdown{margin:10px 0 -6px}',
       '.chev{margin:0 auto;width:28px;height:44px;opacity:.9}',
-      '.chev.up{margin:0 auto 10px;transform:rotate(180deg)}',
+      '.chev.up{margin:0 auto 8px;transform:rotate(180deg)}',
       '.chev svg{width:100%;height:100%;display:block}',
       '@media(prefers-reduced-motion:no-preference){',
       '  .aimdown .chev{animation:ehb 1.5s ease-in-out infinite}',
