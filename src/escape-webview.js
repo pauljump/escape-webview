@@ -216,8 +216,7 @@
       /* Coach mark: an echo of the control to tap, then a large arrow aimed at
          where the real one sits. The whole pill is the target -- it is a far
          bigger hit area than the kebab inside it. */
-      '.aim{margin:20px 0 16px;display:flex;flex-direction:column;align-items:stretch}',
-      '.aim.up{flex-direction:column-reverse}',
+      '.aim{margin:20px 0 16px}',
 
       '.bar{position:relative;display:flex;align-items:center;gap:10px;',
       '  padding:12px 12px 12px 18px;border-radius:999px;font-size:14px;',
@@ -235,13 +234,15 @@
       '.kb.wide{flex-direction:row}',
       '.kb i{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.55}',
 
-      /* Big and unmissable: this is the whole instruction. */
-      '.chev{margin:10px auto 0;width:26px;height:42px;opacity:.85}',
-      '.aim.up .chev{margin:0 auto 10px;transform:rotate(180deg)}',
+      /* The arrow is the last thing in the card, aimed out of it at the real
+         control sitting just below. Sized to be unmissable. */
+      '.aimdown{margin:16px 0 -4px}',
+      '.chev{margin:0 auto;width:28px;height:44px;opacity:.9}',
+      '.chev.up{margin:0 auto 10px;transform:rotate(180deg)}',
       '.chev svg{width:100%;height:100%;display:block}',
       '@media(prefers-reduced-motion:no-preference){',
-      '  .aim.down .chev{animation:ehb 1.5s ease-in-out infinite}',
-      '  .aim.up .chev{animation:ehbu 1.5s ease-in-out infinite}}',
+      '  .aimdown .chev{animation:ehb 1.5s ease-in-out infinite}',
+      '  .chev.up{animation:ehbu 1.5s ease-in-out infinite}}',
       '@keyframes ehb{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}',
       '@keyframes ehbu{0%,100%{transform:rotate(180deg) translateY(0)}',
       '  50%{transform:rotate(180deg) translateY(7px)}}',
@@ -289,19 +290,20 @@
       var shownHost = '';
       try { shownHost = new URL(cfg.url).hostname.replace(/^www\./, ''); } catch (e) {}
 
-      h.push('<div class="aim ' + (g.pointer === 'up' ? 'up' : 'down') + '" aria-hidden="true">');
+      var arrow = '<div class="chev"><svg viewBox="0 0 24 40" fill="none" ' +
+        'stroke="currentColor" stroke-width="2.4" stroke-linecap="round" ' +
+        'stroke-linejoin="round"><path d="M12 3v33"/><path d="M4 28l8 8 8-8"/>' +
+        '</svg></div>';
+
+      h.push('<div class="aim" aria-hidden="true">');
+      // Target sits above the card in these apps, so the arrow leads into it.
+      if (g.pointer === 'up') h.push('<div class="chev up">' + arrow + '</div>');
       if (g.bar) {
         h.push('<div class="bar"><span class="host">' + esc(shownHost) + '</span>' +
                '<span class="kb"><i></i><i></i><i></i></span></div>');
       } else {
         h.push('<div class="bar dots-only"><span class="kb wide">' +
                '<i></i><i></i><i></i></span></div>');
-      }
-      if (g.pointer) {
-        h.push('<div class="chev"><svg viewBox="0 0 24 40" fill="none" ' +
-          'stroke="currentColor" stroke-width="2.4" stroke-linecap="round" ' +
-          'stroke-linejoin="round"><path d="M12 3v33"/><path d="M4 28l8 8 8-8"/>' +
-          '</svg></div>');
       }
       h.push('</div>');
 
@@ -312,6 +314,11 @@
       h.push('<button class="tbtn" id="eh-copy">Copy link</button>');
       h.push('<button class="tbtn quiet" id="eh-x">Not now</button>');
       h.push('</div>');
+
+      // Last element in the card: it points out of the card at the real
+      // control directly below, so it belongs nearest that edge.
+      if (g.pointer === 'down') h.push('<div class="aimdown" aria-hidden="true">' + arrow + '</div>');
+
       h.push('<div class="hint" id="eh-note" hidden></div>');
 
     } else {
