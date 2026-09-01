@@ -49,7 +49,7 @@
      Other apps are from their documented UI; correct them as you verify. */
   var GUIDE = {
     x: {
-      trigger: '\u22ee', where: 'next to the address, at the bottom of this screen',
+      trigger: '\u22ee', where: 'at the bottom of this screen',
       pointer: 'down',
       menu: [['share', 'Share'], ['globe', 'Open in browser'], ['copy', 'Copy link']]
     },
@@ -210,36 +210,47 @@
       'ol.steps b{font-weight:680}',
       'p.or{margin:14px 0 0;font-size:12px;text-align:center;opacity:.5}',
 
-      // A replica of the host app's own menu. Recognition beats description:
-      // the user matches this against the real sheet instead of parsing prose.
-      '.menu{margin:4px 0 16px;border-radius:14px;overflow:hidden;',
-      '  background:rgba(128,128,128,.14)}',
-      '.mi{display:flex;align-items:center;justify-content:space-between;gap:12px;',
-      '  padding:13px 15px;font-size:15px}',
-      '.mi+.mi{border-top:1px solid rgba(128,128,128,.2)}',
-      '.mi i{flex:0 0 auto;width:19px;height:19px;opacity:.75}',
-      '.mi i svg{width:100%;height:100%;display:block}',
-      '.mi.pick{background:#0b0b0c;color:#fff;font-weight:650;',
-      '  box-shadow:inset 0 0 0 2px #0b0b0c}',
-      '@media(prefers-color-scheme:dark){.mi.pick{background:#f4f4f5;color:#0b0b0c}}',
-      '.mi.pick i{opacity:1}',
-
-      'p.lead{margin:0 0 4px;font-size:14px;line-height:1.5;opacity:1}',
-      'p.lead b{font-weight:680}',
-      '.kebab{display:inline-block;padding:0 7px;margin:0 1px;border-radius:6px;',
-      '  background:rgba(128,128,128,.22);font-weight:700}',
-
-      // Aims at the real control. In X the kebab sits in the bottom bar, so the
-      // arrow points down and out of the card toward it.
-      '.point{font-size:20px;line-height:1;text-align:center;opacity:.4;',
-      '  margin:6px 0 20px}',
-      '.point.up{transform:rotate(180deg)}',
+      /* Coach mark: an echo of the host app's address bar with the kebab lit,
+         and a chevron aiming at where the real one sits. One focal point. */
+      '.aim{margin:20px 0 14px}',
+      '.bar{display:flex;align-items:center;gap:10px;padding:9px 10px 9px 15px;',
+      '  border-radius:999px;background:rgba(128,128,128,.16);',
+      '  font-size:13px;letter-spacing:-.01em}',
+      '.host{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;',
+      '  white-space:nowrap;opacity:.5}',
+      '.kb{position:relative;flex:0 0 auto;display:flex;flex-direction:column;',
+      '  align-items:center;justify-content:center;gap:2.5px;width:26px;height:26px;',
+      '  border-radius:50%;background:#0b0b0c}',
+      '@media(prefers-color-scheme:dark){.kb{background:#f4f4f5}}',
+      '.kb i{width:2.5px;height:2.5px;border-radius:50%;background:#fff}',
+      '@media(prefers-color-scheme:dark){.kb i{background:#0b0b0c}}',
+      /* Pulse ring: draws the eye without moving layout. */
+      '.kb::after{content:"";position:absolute;inset:-4px;border-radius:50%;',
+      '  border:2px solid currentColor;opacity:0}',
       '@media(prefers-reduced-motion:no-preference){',
-      '  .point.down{animation:ehb 1.4s ease-in-out infinite}',
-      '  .point.up{animation:ehbu 1.4s ease-in-out infinite}}',
-      '@keyframes ehb{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}',
-      '@keyframes ehbu{0%,100%{transform:rotate(180deg) translateY(0)}',
-      '  50%{transform:rotate(180deg) translateY(5px)}}',
+      '  .kb::after{animation:ehp 1.9s ease-out infinite}}',
+      '@keyframes ehp{0%{opacity:.5;transform:scale(.85)}',
+      '  70%{opacity:0;transform:scale(1.5)}100%{opacity:0}}',
+      '.chev{margin-top:5px;padding-right:7px;text-align:right;font-size:17px;opacity:.35}',
+      '@media(prefers-reduced-motion:no-preference){',
+      '  .aim.down .chev{animation:ehb 1.6s ease-in-out infinite}}',
+      '@keyframes ehb{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}',
+      '.aim.up{display:flex;flex-direction:column-reverse}',
+      '.aim.up .chev{margin:0 0 5px;transform:rotate(180deg)}',
+
+      'p.cta{margin:0;font-size:14.5px;line-height:1.5;opacity:.95}',
+      'p.cta b{font-weight:680}',
+      '.dots{display:inline-block;min-width:20px;padding:1px 5px;border-radius:6px;',
+      '  background:rgba(128,128,128,.22);text-align:center}',
+
+      '.foot{display:flex;gap:8px;margin-top:20px}',
+      '.tbtn{flex:1;padding:12px 10px;border:0;border-radius:11px;cursor:pointer;',
+      '  font-size:14px;font-weight:600;color:inherit;',
+      '  background:rgba(128,128,128,.16);-webkit-tap-highlight-color:transparent}',
+      '.tbtn.quiet{background:transparent;opacity:.45;font-weight:500}',
+      '.tbtn.done{background:rgba(18,138,75,.16);color:#12894b}',
+      '@media(prefers-color-scheme:dark){.tbtn.done{color:#4ade80}}',
+
       '.dismiss{margin-top:14px;font-size:12px;opacity:.5;background:none;border:0;color:inherit;',
       '  width:100%;cursor:pointer}',
       '.ok{opacity:1;color:#128a4b;font-weight:600}'
@@ -248,9 +259,7 @@
     var h = [];
     h.push('<div class="wrap"><div class="card" role="dialog" aria-modal="true">');
     h.push('<h1>Open in your browser</h1>');
-    h.push('<p>You’re viewing ' + (cfg.name ? esc(cfg.name) : 'this page') +
-           ' inside ' + esc(appName) +
-           '. Some things (sign-in, extensions, saved passwords) only work in your real browser.</p>');
+    h.push('<p>' + esc(appName) + '\u2019s built-in browser blocks sign-in, saved passwords and extensions.</p>');
 
     if (deepLink) {
       h.push('<a class="btn primary" href="' + esc(deepLink) + '">Open in the app</a>');
@@ -262,28 +271,31 @@
       h.push('<div class="hint">' + esc(ANDROID_HINT) + '</div>');
 
     } else if (isIOS) {
-      // Measured in X for iPhone 12.21 / iOS 26.6: all 11 custom-scheme routes
-      // are blocked (chrome, safari, firefox, x-callback, shortcuts, and the
-      // same again via hidden iframe), and window.open only yields another tab
-      // inside the same webview. There is no programmatic escape, so stop
-      // offering buttons that cannot work and teach the one gesture that does.
+      // No programmatic escape exists here (11 of 11 schemes blocked in X,
+      // window.open only yields another in-app tab), so the card has exactly
+      // one job: move the eye to the real control and name the real label.
+      //
+      // An earlier version drew the whole menu, which read as tappable and
+      // pulled taps away from the actual gesture. One focal point instead.
       var g = GUIDE[hintKey] || GUIDE.menu;
+      // NB: not `host` -- that name already holds the card element in this
+      // function scope, and `var` would clobber it.
+      var shownHost = '';
+      try { shownHost = new URL(cfg.url).hostname.replace(/^www\./, ''); } catch (e) {}
 
-      h.push('<div class="menu" aria-hidden="true">');
-      for (var i = 0; i < g.menu.length; i++) {
-        var pick = g.menu[i][0] === 'globe';
-        h.push('<div class="mi' + (pick ? ' pick' : '') + '">' +
-               '<span>' + esc(g.menu[i][1]) + '</span>' +
-               '<i>' + ICONS[g.menu[i][0]] + '</i></div>');
-      }
+      h.push('<div class="aim ' + (g.pointer === 'up' ? 'up' : 'down') + '" aria-hidden="true">');
+      h.push('<div class="bar"><span class="host">' + esc(shownHost) + '</span>' +
+             '<span class="kb"><i></i><i></i><i></i></span></div>');
+      h.push('<div class="chev">' + (g.pointer === 'up' ? '\u2191' : '\u2193') + '</div>');
       h.push('</div>');
 
-      h.push('<p class="lead">Tap <b class="kebab">' + esc(g.trigger) + '</b> ' +
-             esc(g.where) + ', then <b>' + esc(pickLabel(g)) + '</b>.</p>');
+      h.push('<p class="cta">Tap the <b class="dots">\u22ee</b> ' + esc(g.where) +
+             ', then choose <b>' + esc(pickLabel(g)) + '</b>.</p>');
 
-      if (g.pointer) h.push('<div class="point ' + g.pointer + '">\u2193</div>');
-
-      h.push('<button class="btn ghost" id="eh-copy">Copy link instead</button>');
+      h.push('<div class="foot">');
+      h.push('<button class="tbtn" id="eh-copy">Copy link</button>');
+      h.push('<button class="tbtn quiet" id="eh-x">Not now</button>');
+      h.push('</div>');
       h.push('<div class="hint" id="eh-note" hidden></div>');
 
     } else {
@@ -294,7 +306,9 @@
              esc(GUIDE.menu.trigger) + ' \u2192 ' + esc(pickLabel(GUIDE.menu)) + '.</div>');
     }
 
-    h.push('<button class="dismiss" id="eh-x">Keep viewing here</button>');
+    if (!(isIOS && !isAndroid)) {
+      h.push('<button class="dismiss" id="eh-x">Keep viewing here</button>');
+    }
     h.push('</div></div>');
 
     // Style via a constructable stylesheet: not subject to style-src CSP, so the
