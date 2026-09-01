@@ -49,28 +49,31 @@
      Other apps are from their documented UI; correct them as you verify. */
   var GUIDE = {
     x: {
-      trigger: '\u22ee', where: 'at the bottom of this screen',
-      pointer: 'down',
+      // Verified on device: tapping anywhere on the address pill opens the
+      // sheet. The kebab works too but is a far smaller target, so aim at
+      // the pill.
+      tap: 'the address bar', where: 'at the bottom of this screen',
+      pointer: 'down', bar: true,
       menu: [['share', 'Share'], ['globe', 'Open in browser'], ['copy', 'Copy link']]
     },
     instagram: {
-      trigger: '\u2022\u2022\u2022', where: 'top right',
-      pointer: 'up',
+      tap: 'the \u2022\u2022\u2022 button', where: 'at the top right',
+      pointer: 'up', bar: false,
       menu: [['copy', 'Copy link'], ['globe', 'Open in external browser']]
     },
     facebook: {
-      trigger: '\u2022\u2022\u2022', where: 'top right',
-      pointer: 'up',
+      tap: 'the \u2022\u2022\u2022 button', where: 'at the top right',
+      pointer: 'up', bar: false,
       menu: [['copy', 'Copy link'], ['globe', 'Open in external browser']]
     },
     tiktok: {
-      trigger: '\u2022\u2022\u2022', where: 'top right',
-      pointer: 'up',
+      tap: 'the \u2022\u2022\u2022 button', where: 'at the top right',
+      pointer: 'up', bar: false,
       menu: [['share', 'Share'], ['globe', 'Open in browser']]
     },
     menu: {
-      trigger: '\u2022\u2022\u2022', where: 'in the app\u2019s menu',
-      pointer: null,
+      tap: 'the \u2022\u2022\u2022 button', where: 'in this browser\u2019s toolbar',
+      pointer: null, bar: false,
       menu: [['globe', 'Open in browser']]
     }
   };
@@ -210,38 +213,41 @@
       'ol.steps b{font-weight:680}',
       'p.or{margin:14px 0 0;font-size:12px;text-align:center;opacity:.5}',
 
-      /* Coach mark: an echo of the host app's address bar with the kebab lit,
-         and a chevron aiming at where the real one sits. One focal point. */
-      '.aim{margin:20px 0 14px}',
-      '.bar{display:flex;align-items:center;gap:10px;padding:9px 10px 9px 15px;',
-      '  border-radius:999px;background:rgba(128,128,128,.16);',
-      '  font-size:13px;letter-spacing:-.01em}',
-      '.host{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;',
-      '  white-space:nowrap;opacity:.5}',
-      '.kb{position:relative;flex:0 0 auto;display:flex;flex-direction:column;',
-      '  align-items:center;justify-content:center;gap:2.5px;width:26px;height:26px;',
-      '  border-radius:50%;background:#0b0b0c}',
-      '@media(prefers-color-scheme:dark){.kb{background:#f4f4f5}}',
-      '.kb i{width:2.5px;height:2.5px;border-radius:50%;background:#fff}',
-      '@media(prefers-color-scheme:dark){.kb i{background:#0b0b0c}}',
-      /* Pulse ring: draws the eye without moving layout. */
-      '.kb::after{content:"";position:absolute;inset:-4px;border-radius:50%;',
-      '  border:2px solid currentColor;opacity:0}',
-      '@media(prefers-reduced-motion:no-preference){',
-      '  .kb::after{animation:ehp 1.9s ease-out infinite}}',
-      '@keyframes ehp{0%{opacity:.5;transform:scale(.85)}',
-      '  70%{opacity:0;transform:scale(1.5)}100%{opacity:0}}',
-      '.chev{margin-top:5px;padding-right:7px;text-align:right;font-size:17px;opacity:.35}',
-      '@media(prefers-reduced-motion:no-preference){',
-      '  .aim.down .chev{animation:ehb 1.6s ease-in-out infinite}}',
-      '@keyframes ehb{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}',
-      '.aim.up{display:flex;flex-direction:column-reverse}',
-      '.aim.up .chev{margin:0 0 5px;transform:rotate(180deg)}',
+      /* Coach mark: an echo of the control to tap, then a large arrow aimed at
+         where the real one sits. The whole pill is the target -- it is a far
+         bigger hit area than the kebab inside it. */
+      '.aim{margin:20px 0 16px;display:flex;flex-direction:column;align-items:stretch}',
+      '.aim.up{flex-direction:column-reverse}',
 
-      'p.cta{margin:0;font-size:14.5px;line-height:1.5;opacity:.95}',
+      '.bar{position:relative;display:flex;align-items:center;gap:10px;',
+      '  padding:12px 12px 12px 18px;border-radius:999px;font-size:14px;',
+      '  letter-spacing:-.01em;background:rgba(128,128,128,.18);',
+      '  box-shadow:0 0 0 2px currentColor}',
+      '.bar.dots-only{justify-content:center;padding:12px}',
+      '@media(prefers-reduced-motion:no-preference){',
+      '  .bar{animation:ehglow 2s ease-in-out infinite}}',
+      '@keyframes ehglow{0%,100%{box-shadow:0 0 0 2px currentColor}',
+      '  50%{box-shadow:0 0 0 5px rgba(128,128,128,.28)}}',
+      '.host{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;',
+      '  white-space:nowrap;opacity:.6}',
+      '.kb{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;',
+      '  justify-content:center;gap:2.5px;width:24px;height:24px}',
+      '.kb.wide{flex-direction:row}',
+      '.kb i{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.55}',
+
+      /* Big and unmissable: this is the whole instruction. */
+      '.chev{margin:10px auto 0;width:26px;height:42px;opacity:.85}',
+      '.aim.up .chev{margin:0 auto 10px;transform:rotate(180deg)}',
+      '.chev svg{width:100%;height:100%;display:block}',
+      '@media(prefers-reduced-motion:no-preference){',
+      '  .aim.down .chev{animation:ehb 1.5s ease-in-out infinite}',
+      '  .aim.up .chev{animation:ehbu 1.5s ease-in-out infinite}}',
+      '@keyframes ehb{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}',
+      '@keyframes ehbu{0%,100%{transform:rotate(180deg) translateY(0)}',
+      '  50%{transform:rotate(180deg) translateY(7px)}}',
+
+      'p.cta{margin:0;font-size:15px;line-height:1.5}',
       'p.cta b{font-weight:680}',
-      '.dots{display:inline-block;min-width:20px;padding:1px 5px;border-radius:6px;',
-      '  background:rgba(128,128,128,.22);text-align:center}',
 
       '.foot{display:flex;gap:8px;margin-top:20px}',
       '.tbtn{flex:1;padding:12px 10px;border:0;border-radius:11px;cursor:pointer;',
@@ -284,12 +290,22 @@
       try { shownHost = new URL(cfg.url).hostname.replace(/^www\./, ''); } catch (e) {}
 
       h.push('<div class="aim ' + (g.pointer === 'up' ? 'up' : 'down') + '" aria-hidden="true">');
-      h.push('<div class="bar"><span class="host">' + esc(shownHost) + '</span>' +
-             '<span class="kb"><i></i><i></i><i></i></span></div>');
-      h.push('<div class="chev">' + (g.pointer === 'up' ? '\u2191' : '\u2193') + '</div>');
+      if (g.bar) {
+        h.push('<div class="bar"><span class="host">' + esc(shownHost) + '</span>' +
+               '<span class="kb"><i></i><i></i><i></i></span></div>');
+      } else {
+        h.push('<div class="bar dots-only"><span class="kb wide">' +
+               '<i></i><i></i><i></i></span></div>');
+      }
+      if (g.pointer) {
+        h.push('<div class="chev"><svg viewBox="0 0 24 40" fill="none" ' +
+          'stroke="currentColor" stroke-width="2.4" stroke-linecap="round" ' +
+          'stroke-linejoin="round"><path d="M12 3v33"/><path d="M4 28l8 8 8-8"/>' +
+          '</svg></div>');
+      }
       h.push('</div>');
 
-      h.push('<p class="cta">Tap the <b class="dots">\u22ee</b> ' + esc(g.where) +
+      h.push('<p class="cta">Tap <b>' + esc(g.tap) + '</b> ' + esc(g.where) +
              ', then choose <b>' + esc(pickLabel(g)) + '</b>.</p>');
 
       h.push('<div class="foot">');
